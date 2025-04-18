@@ -19,67 +19,37 @@ package uk.co.flypig;
  * along with this code.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.schabi.newpipe.extractor.NewPipe;
-import org.schabi.newpipe.extractor.StreamingService;
-import org.schabi.newpipe.extractor.ServiceList;
-import org.schabi.newpipe.extractor.ListExtractor;
-import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
-import org.schabi.newpipe.extractor.search.SearchInfo;
-import org.schabi.newpipe.extractor.comments.CommentsInfo;
-import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
-import org.schabi.newpipe.extractor.stream.StreamExtractor;
-import org.schabi.newpipe.extractor.stream.AudioStream;
-import org.schabi.newpipe.extractor.stream.VideoStream;
-import org.schabi.newpipe.extractor.suggestion.SuggestionExtractor;
-import org.schabi.newpipe.extractor.exceptions.ExtractionException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import okhttp3.OkHttpClient;
-import okhttp3.ConnectionSpec;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Arrays;
+import java.util.Map;
 import java.util.function.Function;
-import com.fasterxml.jackson.core.type.TypeReference;
+
+import com.dslplatform.json.DslJson;
+import okhttp3.ConnectionSpec;
+import okhttp3.OkHttpClient;
 import org.graalvm.nativeimage.IsolateThread;
-import org.graalvm.nativeimage.UnmanagedMemory;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
-import org.graalvm.nativeimage.c.type.CTypeConversion;
-import org.graalvm.nativeimage.c.type.CIntPointer;
 import org.graalvm.nativeimage.c.type.CCharPointer;
-import org.graalvm.nativeimage.c.type.CCharPointerPointer;
-
-// Reflection
-import io.micronaut.core.annotation.TypeHint;
-import org.schabi.newpipe.extractor.Page;
-import org.schabi.newpipe.extractor.InfoItem;
-import org.schabi.newpipe.extractor.Image;
-import org.schabi.newpipe.extractor.timeago.patterns.en_GB;
-import org.schabi.newpipe.extractor.MetaInfo;
+import org.graalvm.nativeimage.c.type.CTypeConversion;
+import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
+import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.ServiceList;
+import org.schabi.newpipe.extractor.StreamingService;
+import org.schabi.newpipe.extractor.comments.CommentsInfo;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
-import org.schabi.newpipe.extractor.stream.Description;
+import org.schabi.newpipe.extractor.exceptions.ExtractionException;
+import org.schabi.newpipe.extractor.search.SearchInfo;
+import org.schabi.newpipe.extractor.stream.AudioStream;
+import org.schabi.newpipe.extractor.stream.StreamExtractor;
+import org.schabi.newpipe.extractor.stream.VideoStream;
+import org.schabi.newpipe.extractor.suggestion.SuggestionExtractor;
 
-@TypeHint(
-    value = {
-        Page.class,
-        InfoItem.class,
-        Image.class,
-        en_GB.class,
-        MetaInfo.class,
-        CommentsInfoItem.class,
-        Description.class,
-    },
-    accessType = {
-        TypeHint.AccessType.ALL_PUBLIC_CONSTRUCTORS,
-        TypeHint.AccessType.ALL_DECLARED_FIELDS,
-        TypeHint.AccessType.ALL_DECLARED_METHODS
-    }
-)
 
 final class MethodInfo<In, Out> {
     public MethodInfo(Function<In, Out> method, Class<In> className) {
@@ -92,7 +62,7 @@ final class MethodInfo<In, Out> {
 }
 
 final class Main {
-    static ObjectMapper jsonMapper = new JsonMapper();
+    static DslJson<Object> jsonMapper = new DslJson<>();
     static Map<String, MethodInfo> methodInfo;
     static CCharPointer emptyString;
     static DownloaderImpl downloader = null;
@@ -110,11 +80,13 @@ final class Main {
         String output = new String();
         try {
             final String parameters = CTypeConversion.toJavaString(in);
-            final In input = Main.jsonMapper.readValue(parameters, className);
+            final In input = Main.jsonMapper.deserialize(className, new ByteArrayInputStream(parameters.getBytes(StandardCharsets.UTF_8)));
             final Out result = method.apply(input);
-            output = Main.jsonMapper.writeValueAsString(result);
-        } catch (final JsonProcessingException e) {
-            System.out.println("Exception: " + e);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            Main.jsonMapper.serialize(result, outputStream);
+            output = outputStream.toString(StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            System.out.println("Exception during Serialization: " + e);
         }
 
         final CTypeConversion.CCharPointerHolder holder = CTypeConversion.toCString(output);
@@ -131,9 +103,12 @@ final class Main {
 
     @CEntryPoint(name = "init")
     static void init(IsolateThread thread) {
-        // Set up static data
-        emptyString = CTypeConversion.toCString("").get();
-        jsonMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+            // Set up static data
+        // my IDE complains that toCString returns an AutoClosable that is not used
+        // I think on close the CString would be free'd
+        // I guess that means this warns of a memory leak
+        // in this case this is intended. I wonder when the result of invoke is supposed to be free'd
+            emptyString = CTypeConversion.toCString("").get();
 
         // Create the HTTP client
         final OkHttpClient.Builder builder = new OkHttpClient.Builder();

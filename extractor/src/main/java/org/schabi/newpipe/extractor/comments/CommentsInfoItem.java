@@ -39,6 +39,10 @@ public class CommentsInfoItem extends InfoItem {
 
     public static final int UNKNOWN_REPLY_COUNT = -1;
 
+    protected CommentsInfoItem() {
+        super(null,0,null,null);
+    }
+
     public CommentsInfoItem(final int serviceId, final String url, final String name) {
         super(InfoType.COMMENT, serviceId, url, name);
     }

@@ -18,12 +18,11 @@ package uk.co.flypig;
  * You should have received a copy of the GNU General Public License
  * along with this code.  If not, see <http://www.gnu.org/licenses/>.
  */
-	
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import io.micronaut.core.annotation.ReflectiveAccess;
 
-@ReflectiveAccess
+@com.dslplatform.json.CompiledJson
 @Data
 @NoArgsConstructor
 public final class DownloadExtracted {

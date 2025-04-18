@@ -21,9 +21,8 @@ package uk.co.flypig;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import io.micronaut.core.annotation.ReflectiveAccess;
 
-@ReflectiveAccess
+@com.dslplatform.json.CompiledJson
 @Data
 @NoArgsConstructor
 public final class ParamStringList {

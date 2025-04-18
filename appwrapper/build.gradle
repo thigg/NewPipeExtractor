@@ -2,8 +2,6 @@ plugins {
     id 'checkstyle'
     id 'application'
     id 'org.graalvm.buildtools.native'
-    id 'io.micronaut.minimal.application'
-    id 'io.micronaut.graalvm'
 }
 
 apply plugin : "java"
@@ -28,14 +26,13 @@ dependencies {
     api project(':extractor')
 
     implementation 'com.squareup.okhttp3:okhttp:3.12.13'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.3'
 
     compileOnly 'org.projectlombok:lombok:1.18.36'
     annotationProcessor 'org.projectlombok:lombok:1.18.36'
 
-    annotationProcessor 'io.micronaut.serde:micronaut-serde-processor:2.9.0'
-    implementation "io.micronaut.serde:micronaut-serde-jackson:2.9.0"
-    annotationProcessor 'io.micronaut:micronaut-graal:3.0.0'
+    compileOnly 'com.dslplatform:dsl-json:2.0.2'
+    annotationProcessor 'com.dslplatform:dsl-json:2.0.2'
+    compileOnly 'javax.json.bind:javax.json.bind-api:1.0'
 }
 
 graalvmNative {

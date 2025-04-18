@@ -22,9 +22,8 @@ package uk.co.flypig;
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import java.util.List;
-import io.micronaut.core.annotation.ReflectiveAccess;
 
-@ReflectiveAccess
+@com.dslplatform.json.CompiledJson
 @Data
 @AllArgsConstructor
 public final class SuggestionsResponse {
